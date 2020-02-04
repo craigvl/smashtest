@@ -6,6 +6,7 @@ const ie = require('selenium-webdriver/ie');
 const edge = require('selenium-webdriver/edge');
 const fs = require('fs');
 const path = require('path');
+const PNG = require('pngjs').PNG;
 
 const Jimp = require('jimp');
 const request = require('request-promise-native');
@@ -13,6 +14,7 @@ const utils = require('../../src/utils.js');
 const ElementFinder = require('./elementfinder.js');
 const Comparer = require('./comparer.js');
 const {runner, tree, reporter} = require('../../src/instances.js');
+const pixelmatch = require('pixelmatch');
 
 
 class BrowserInstance {
@@ -463,6 +465,21 @@ class BrowserInstance {
             fs.mkdirSync(dir, { recursive: true });
         }
 
+        if(this.runInstance.runner.baseScreenshots) {
+            const baselinedir = path.join(reporter.getPathFolder(), "baseline_screenshots");
+            if(!fs.existsSync(baselinedir)) {
+                fs.mkdirSync(baselinedir, { recursive: true });
+            }
+        }
+
+        await this.executeScript(function() {
+            var sheet = document.createElement('style');
+            sheet.innerHTML = "input {caret-color: transparent;}" +
+            ".SearchTermCloud {color:black;}" + 
+            ".CloudContainer {display:none!important;}";
+            document.body.appendChild(sheet);
+        });
+
         // Take screenshot
         let data = null;
         try {
@@ -476,11 +493,42 @@ class BrowserInstance {
 
         // Write screenshot to file
         let filename = `${this.runInstance.currBranch.hash}_${this.runInstance.currBranch.steps.indexOf(this.runInstance.currStep) || `0`}_${isAfter ? `after` : `before`}.jpg`;
-        const SCREENSHOT_WIDTH = 1000;
-        await (await Jimp.read(Buffer.from(data, 'base64')))
-            .resize(SCREENSHOT_WIDTH, Jimp.AUTO)
-            .quality(60)
-            .writeAsync(path.join(reporter.getFullSSPath(), filename));
+        let fullNameBase = path.join(reporter.getFullBaseSSPath()) + "\\" + filename;
+        let fullName = path.join(reporter.getFullSSPath()) + "\\" + filename;
+
+        if(!this.runInstance.runner.baseScreenshots && isAfter) {
+            await fs.writeFileSync(fullName, data, 'base64', function(err) {
+                console.log(err);
+            });
+        }
+
+        if(this.runInstance.runner.baseScreenshots && isAfter) {
+            await fs.writeFileSync(fullNameBase, data, 'base64', function(err) {
+                console.log(err);
+            });    
+        }
+
+        if(isAfter && this.runInstance.runner.compareScreenshots ) {
+            try {
+                const img1 = PNG.sync.read(fs.readFileSync(fullNameBase));
+                const img2 = PNG.sync.read(fs.readFileSync(fullName));
+                const {width, height} = img1;
+                const diff = new PNG({width, height});
+                var screenShotCompare = pixelmatch(img1.data, img2.data, diff.data, width, height, {threshold: 0.1});
+                                
+                if (screenShotCompare > 0) {
+                    console.log( screenShotCompare );
+                    console.log(path.join(reporter.getFullBaseSSPath()));
+                    console.log(path.join(reporter.getFullSSPath()));
+                    console.log("ScreenShots don't match for file", ":", filename );
+                    fs.writeFileSync('diff'+filename, PNG.sync.write(diff));
+                } else {
+                    debugger;
+                }
+            } catch(error) {
+                console.log(error);
+            }
+        }
 
         // Include crosshairs in report
         if(targetCoords) {

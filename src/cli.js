@@ -256,6 +256,14 @@ Options
                 runner.screenshots = boolValue();
                 break;
 
+            case "basescreenshots":
+                runner.baseScreenshots = boolValue();
+                break;
+
+            case "comparescreenshots":
+                runner.compareScreenshots = boolValue();
+                break;
+
             case "skip-passed":
                 if(value == 'true') {
                     runner.skipPassed = true;

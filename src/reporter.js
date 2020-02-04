@@ -12,7 +12,8 @@ let reportFilename,
     reportDataFilename,            // absolute path of report-data.js file
     passedDataFilename,            // absolute path of passed-data file
     passedDataFilenameHistory,     // absolute path of passed-data file inside history, if report-history is on
-    smashtestSSDir;                // absolute path of screenshots directory
+    smashtestSSDir,                // absolute path of screenshots directory
+    smashtestBaseSSDir;            // absolute path of baseline screenshots directory
 
 const now = new Date();
 const dateFormat = date.format(now, 'YYYY-MM-DDTHH-mm-ss');
@@ -56,6 +57,7 @@ class Reporter {
         passedDataFilename = path.join(smashtestFolder, "passed-data");
         passedDataFilenameHistory = path.join(folder, "passed-data");
         smashtestSSDir = path.join(folder, "screenshots");
+        smashtestBaseSSDir = path.join(folder, "baseline_screenshots");
 
         return folder;
     }
@@ -72,6 +74,10 @@ class Reporter {
      */
     getFullSSPath() {
         return smashtestSSDir;
+    }
+
+    getFullBaseSSPath() {
+        return smashtestBaseSSDir;
     }
 
     /**
