@@ -216,8 +216,14 @@ class ElementFinder {
                     input = parseInt(matches[1]);
                 }
                 else if(matches = propStr.match(Constants.QUOTED_STRING_LITERAL_WHOLE)) { // propStr is 'text' (convert to `contains 'text'`)
-                    canonPropStr = `contains`;
-                    input = utils.unescape(utils.stripQuotes(propStr));
+                    if (matches = utils.unescape(utils.stripQuotes(propStr)).match(Constants.TEXT_EF_EXACT)) {
+                        canonPropStr = `contains exact`;
+                        input = utils.unescape(utils.stripQuotes(propStr));
+                        input = input.replace(Constants.TEXT_EF_EXACT,"");
+                    } else {
+                        canonPropStr = `contains`;
+                        input = utils.unescape(utils.stripQuotes(propStr));
+                    }
                 }
                 else if(definedProps.hasOwnProperty(ElementFinder.canonicalizePropStr(propStr)[0])) { // propStr is a defined prop
                     // do nothing
